@@ -1,0 +1,33 @@
+### Root endpoint
+GET http://localhost:8000/
+
+### Get all orders
+GET http://localhost:8000/orders/
+
+### Get order by ID
+GET http://localhost:8000/orders/1
+
+### Create new order
+POST http://localhost:8000/orders/
+Content-Type: application/json
+
+{
+  "item": "Pizza",
+  "quantity": 2
+}
+
+### Update existing order by ID (ex. ID=1)
+PUT http://localhost:8000/orders/1
+Content-Type: application/json
+
+{
+  "item": "Burger",
+  "quantity": 3,
+  "status": "ready"
+}
+
+### Patch only the status
+PATCH http://localhost:8000/orders/1/status?status=served
+
+### Delete order by ID (ex. ID=1)
+DELETE http://localhost:8000/orders/1

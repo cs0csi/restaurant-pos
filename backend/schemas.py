@@ -8,6 +8,9 @@ class OrderBase(BaseModel):
 class OrderCreate(OrderBase):
     pass
 
+class OrderUpdate(OrderBase):
+    status: str
+
 class OrderRead(OrderBase):
     id: int
     status: str
