@@ -1,0 +1,78 @@
+### 1️⃣ Get API Root
+GET http://localhost:8000/
+Accept: application/json
+
+### 2️⃣ Create Menu Items
+POST http://localhost:8000/menu/
+Content-Type: application/json
+
+{
+  "name": "Margherita Pizza",
+  "price": 12.5
+}
+
+###
+
+POST http://localhost:8000/menu/
+Content-Type: application/json
+
+{
+  "name": "Caesar Salad",
+  "price": 8.9
+}
+
+###
+
+POST http://localhost:8000/menu/
+Content-Type: application/json
+
+{
+  "name": "Cola",
+  "price": 3.0
+}
+
+### 3️⃣ List All Menu Items
+GET http://localhost:8000/menu/
+Accept: application/json
+
+### 4️⃣ Create an Order
+POST http://localhost:8000/orders/
+Content-Type: application/json
+
+{
+  "items": [
+    { "menu_item_id": 1, "quantity": 2 },
+    { "menu_item_id": 3, "quantity": 1 }
+  ]
+}
+
+### 5️⃣ Get All Orders
+GET http://localhost:8000/orders/
+Accept: application/json
+
+### 6️⃣ Get Single Order by ID
+GET http://localhost:8000/orders/1
+Accept: application/json
+
+
+### 8️⃣ Partially Update Order (PATCH)
+PATCH http://localhost:8000/orders/1
+Content-Type: application/json
+
+{
+  "status": "cancelled"
+}
+
+### 9️⃣ Delete an Order
+DELETE http://localhost:8000/orders/1
+Accept: application/json
+
+### 🔟 Error Example — Invalid Menu Item
+POST http://localhost:8000/orders/
+Content-Type: application/json
+
+{
+  "items": [
+    { "menu_item_id": 999, "quantity": 1 }
+  ]
+}
