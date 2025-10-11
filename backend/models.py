@@ -21,7 +21,7 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     status = Column(String, default="pending")
     total_price = Column(Float, default=0.0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())  # ✅ auto timestamp
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     items = relationship("OrderItem", back_populates="order", cascade="all, delete")
 
