@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi_pagination import Page, add_pagination, paginate
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 from models import MenuItem, Order, OrderItem
@@ -30,9 +31,9 @@ def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)
     return db_item
 
 
-@app.get("/menu/", response_model=list[schemas.MenuItemRead])
+@app.get("/menu/", response_model=Page[schemas.MenuItemRead])
 def get_menu_items(db: Session = Depends(get_db)):
-    return db.query(MenuItem).all()
+    return paginate(db.query(MenuItem))
 
 
 @app.put("/menu/{item_id}", response_model=schemas.MenuItemRead)
@@ -169,3 +170,6 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
     db.delete(db_order)
     db.commit()
     return {"message": f"Order {order_id} deleted successfully"}
+
+
+add_pagination(app)
