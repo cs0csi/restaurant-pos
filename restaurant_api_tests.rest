@@ -2,13 +2,15 @@
 GET http://localhost:8000/
 Accept: application/json
 
+
 ### 2️⃣ Create Menu Items
 POST http://localhost:8000/menu/
 Content-Type: application/json
 
 {
-  "name": "Margherita Pizza",
-  "price": 12.5
+  "name": "Margherita Pizza Test",
+  "price": 12.5,
+  "category": "pizza"
 }
 
 ###
@@ -18,7 +20,8 @@ Content-Type: application/json
 
 {
   "name": "Caesar Salad",
-  "price": 8.9
+  "price": 8.9,
+  "category": "salad"
 }
 
 ###
@@ -28,12 +31,35 @@ Content-Type: application/json
 
 {
   "name": "Cola",
-  "price": 3.0
+  "price": 3.0,
+  "category": "drink"
 }
+
 
 ### 3️⃣ List All Menu Items
 GET http://localhost:8000/menu/
 Accept: application/json
+
+
+### 3.1️⃣ Paginated Menu (limit + offset)
+GET http://localhost:8000/menu/?limit=2&offset=0
+Accept: application/json
+
+
+### 3.2️⃣ Filter Menu by Category
+GET http://localhost:8000/menu/?category=pizza
+Accept: application/json
+
+
+### 3.3️⃣ Filter Menu by Price Range
+GET http://localhost:8000/menu/?min_price=5&max_price=10
+Accept: application/json
+
+
+### 3.4️⃣ Search Menu by Name
+GET http://localhost:8000/menu/?search=salad
+Accept: application/json
+
 
 ### 4️⃣ Create an Order
 POST http://localhost:8000/orders/
@@ -46,13 +72,43 @@ Content-Type: application/json
   ]
 }
 
+
 ### 5️⃣ Get All Orders
 GET http://localhost:8000/orders/
 Accept: application/json
 
+
+### 5.1️⃣ Paginated Orders
+GET http://localhost:8000/orders/?limit=2&offset=0
+Accept: application/json
+
+
+### 5.2️⃣ Filter Orders by Status
+GET http://localhost:8000/orders/?status=pending
+Accept: application/json
+
+
+### 5.3️⃣ Filter Orders by Total Price
+GET http://localhost:8000/orders/?min_total=10&max_total=30
+Accept: application/json
+
+
 ### 6️⃣ Get Single Order by ID
 GET http://localhost:8000/orders/1
 Accept: application/json
+
+
+### 7️⃣ Replace Order (PUT)
+PUT http://localhost:8000/orders/1
+Content-Type: application/json
+
+{
+  "status": "completed",
+  "items": [
+    { "menu_item_id": 2, "quantity": 1 },
+    { "menu_item_id": 3, "quantity": 2 }
+  ]
+}
 
 
 ### 8️⃣ Partially Update Order (PATCH)
@@ -63,9 +119,11 @@ Content-Type: application/json
   "status": "cancelled"
 }
 
+
 ### 9️⃣ Delete an Order
 DELETE http://localhost:8000/orders/1
 Accept: application/json
+
 
 ### 🔟 Error Example — Invalid Menu Item
 POST http://localhost:8000/orders/

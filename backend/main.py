@@ -1,5 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
+from typing import Optional
 from database import engine, Base, get_db
 from models import MenuItem, Order, OrderItem
 import schemas
@@ -13,14 +15,15 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Restaurant POS API 🍽️")
 
-
 # --- Root Endpoint ---
 @app.get("/")
 def root():
     return {"message": "Restaurant POS API running 🚀"}
 
 
-# --- MENU CRUD ---
+# =========================================================
+#                     MENU CRUD
+# =========================================================
 @app.post("/menu/", response_model=schemas.MenuItemRead)
 def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)):
     db_item = MenuItem(**item.model_dump())
@@ -31,8 +34,40 @@ def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)
 
 
 @app.get("/menu/", response_model=list[schemas.MenuItemRead])
-def get_menu_items(db: Session = Depends(get_db)):
-    return db.query(MenuItem).all()
+def get_menu_items(
+    category: Optional[str] = Query(None, description="Filter by category"),
+    min_price: Optional[float] = Query(None, description="Minimum price"),
+    max_price: Optional[float] = Query(None, description="Maximum price"),
+    search: Optional[str] = Query(None, description="Search by name substring"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    db: Session = Depends(get_db)
+):
+    """Paginated + filtered menu listing"""
+    query = db.query(MenuItem)
+
+    # Apply filters
+    if category:
+        query = query.filter(MenuItem.category.ilike(f"%{category}%"))
+    if search:
+        query = query.filter(MenuItem.name.ilike(f"%{search}%"))
+    if min_price is not None:
+        query = query.filter(MenuItem.price >= min_price)
+    if max_price is not None:
+        query = query.filter(MenuItem.price <= max_price)
+
+    # Count total for metadata (optional)
+    total = query.count()
+
+    # Apply pagination
+    items = query.offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": items
+    }
 
 
 @app.put("/menu/{item_id}", response_model=schemas.MenuItemRead)
@@ -60,7 +95,9 @@ def delete_menu_item(item_id: int, db: Session = Depends(get_db)):
     return {"message": f"Menu item {item_id} deleted successfully"}
 
 
-# --- ORDERS CRUD ---
+# =========================================================
+#                     ORDERS CRUD
+# =========================================================
 @app.post("/orders/", response_model=schemas.OrderRead)
 def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
     db_order = Order(status=order.status)
@@ -94,8 +131,33 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/orders/", response_model=list[schemas.OrderRead])
-def get_orders(db: Session = Depends(get_db)):
-    return db.query(Order).all()
+def get_orders(
+    status: Optional[str] = Query(None, description="Filter by order status"),
+    min_total: Optional[float] = Query(None, description="Filter by minimum total price"),
+    max_total: Optional[float] = Query(None, description="Filter by maximum total price"),
+    limit: int = Query(10, ge=1, le=100, description="Orders per page"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    db: Session = Depends(get_db)
+):
+    """Paginated + filtered order listing"""
+    query = db.query(Order)
+
+    if status:
+        query = query.filter(Order.status.ilike(f"%{status}%"))
+    if min_total is not None:
+        query = query.filter(Order.total_price >= min_total)
+    if max_total is not None:
+        query = query.filter(Order.total_price <= max_total)
+
+    total = query.count()
+    orders = query.offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": orders
+    }
 
 
 @app.get("/orders/{order_id}", response_model=schemas.OrderRead)
@@ -151,7 +213,6 @@ def update_order_status(order_id: int, order_update: schemas.OrderUpdate, db: Se
         raise HTTPException(status_code=404, detail="Order not found")
 
     update_data = order_update.model_dump(exclude_unset=True)
-
     for key, value in update_data.items():
         setattr(db_order, key, value)
 
