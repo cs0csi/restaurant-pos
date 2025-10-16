@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi_pagination import Page, add_pagination, paginate
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import Optional
@@ -33,41 +34,9 @@ def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)
     return db_item
 
 
-@app.get("/menu/", response_model=list[schemas.MenuItemRead])
-def get_menu_items(
-    category: Optional[str] = Query(None, description="Filter by category"),
-    min_price: Optional[float] = Query(None, description="Minimum price"),
-    max_price: Optional[float] = Query(None, description="Maximum price"),
-    search: Optional[str] = Query(None, description="Search by name substring"),
-    limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    offset: int = Query(0, ge=0, description="Offset for pagination"),
-    db: Session = Depends(get_db)
-):
-    """Paginated + filtered menu listing"""
-    query = db.query(MenuItem)
-
-    # Apply filters
-    if category:
-        query = query.filter(MenuItem.category.ilike(f"%{category}%"))
-    if search:
-        query = query.filter(MenuItem.name.ilike(f"%{search}%"))
-    if min_price is not None:
-        query = query.filter(MenuItem.price >= min_price)
-    if max_price is not None:
-        query = query.filter(MenuItem.price <= max_price)
-
-    # Count total for metadata (optional)
-    total = query.count()
-
-    # Apply pagination
-    items = query.offset(offset).limit(limit).all()
-
-    return {
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-        "items": items
-    }
+@app.get("/menu/", response_model=Page[schemas.MenuItemRead])
+def get_menu_items(db: Session = Depends(get_db)):
+    return paginate(db.query(MenuItem))
 
 
 @app.put("/menu/{item_id}", response_model=schemas.MenuItemRead)
@@ -230,3 +199,6 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
     db.delete(db_order)
     db.commit()
     return {"message": f"Order {order_id} deleted successfully"}
+
+
+add_pagination(app)
