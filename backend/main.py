@@ -107,13 +107,11 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
     return db_order
 
 
-@app.get("/orders/", response_model=list[schemas.OrderRead])
+@app.get("/orders/", response_model=Page[schemas.OrderRead])
 def get_orders(
     status: Optional[str] = Query(None, description="Filter by order status"),
     min_total: Optional[float] = Query(None, description="Filter by minimum total price"),
     max_total: Optional[float] = Query(None, description="Filter by maximum total price"),
-    limit: int = Query(10, ge=1, le=100, description="Orders per page"),
-    offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: Session = Depends(get_db)
 ):
     """Paginated + filtered order listing"""
@@ -126,15 +124,7 @@ def get_orders(
     if max_total is not None:
         query = query.filter(Order.total_price <= max_total)
 
-    total = query.count()
-    orders = query.offset(offset).limit(limit).all()
-
-    return {
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-        "items": orders
-    }
+    return paginate(query)
 
 
 @app.get("/orders/{order_id}", response_model=schemas.OrderRead)
