@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 # Load environment variables from .env file
 load_dotenv()
 
-DB_URL = os.getenv("DATABASE_URL")
-if not DB_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+DB_URL = os.getenv("DATABASE_URL", "sqlite:////tmp/test.db")
 
 def get_database_connection(max_retries: int = 10, retry_delay: int = 2) -> Optional[create_engine]:
     """

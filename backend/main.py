@@ -44,8 +44,23 @@ def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)
 
 
 @app.get("/menu/", response_model=Page[schemas.MenuItemRead])
-def get_menu_items(db: Session = Depends(get_db)):
-    return paginate(db.query(MenuItem))
+def get_menu_items(
+    db: Session = Depends(get_db),
+    category: Optional[str] = Query(None),
+    min_price: Optional[float] = Query(None),
+    max_price: Optional[float] = Query(None),
+    search: Optional[str] = Query(None),
+):
+    query = db.query(MenuItem)
+    if category:
+        query = query.filter(MenuItem.category.ilike(f"%{category}%"))
+    if min_price is not None:
+        query = query.filter(MenuItem.price >= min_price)
+    if max_price is not None:
+        query = query.filter(MenuItem.price <= max_price)
+    if search:
+        query = query.filter(MenuItem.name.ilike(f"%{search}%"))
+    return paginate(query)
 
 
 @app.put("/menu/{item_id}", response_model=schemas.MenuItemRead)
