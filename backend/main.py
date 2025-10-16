@@ -27,10 +27,18 @@ def root():
 # =========================================================
 @app.post("/menu/", response_model=schemas.MenuItemRead)
 def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)):
+    # Check if item with the same name already exists
+    existing_item = db.query(MenuItem).filter(MenuItem.name == item.name).first()
+    if existing_item:
+        raise HTTPException(status_code=409, detail="Menu item with this name already exists")
     db_item = MenuItem(**item.model_dump())
     db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
+    try:
+        db.commit()
+        db.refresh(db_item)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Menu item with this name already exists")
     return db_item
 
 
