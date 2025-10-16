@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
-from fastapi_pagination import Page, add_pagination, paginate
+from fastapi_pagination import Page, add_pagination
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import Optional
