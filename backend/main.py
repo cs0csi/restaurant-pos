@@ -7,6 +7,10 @@ from typing import Optional
 from database import engine, Base, get_db
 from models import MenuItem, Order, OrderItem
 import schemas
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Create tables
 Base.metadata.create_all(bind=engine)
