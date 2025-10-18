@@ -58,9 +58,9 @@ class OrderCreate(OrderBase):
     items: List[OrderItemCreate]
 
 
-# --- MODIFICATION: Added schema for partial updates (e.g., status-only) ---
 class OrderUpdate(BaseModel):
     status: Optional[str] = None
+    items: Optional[List[OrderItemCreate]] = None
 
 
 class OrderRead(BaseModel):

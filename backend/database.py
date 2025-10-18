@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from dotenv import load_dotenv
 import os
 import time
 from typing import Optional
@@ -11,8 +10,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables from .env file
-load_dotenv()
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:////tmp/test.db")
 

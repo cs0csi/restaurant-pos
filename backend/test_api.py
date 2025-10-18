@@ -4,17 +4,22 @@ import json
 
 BASE_URL = "http://localhost:8000"
 
+def clear_db():
+    # Helper to clear all tables
+    response = requests.get(f"{BASE_URL}/orders/")
+    for order in response.json()["items"]:
+        requests.delete(f"{BASE_URL}/orders/{order['id']}")
+
+    response = requests.get(f"{BASE_URL}/menu/")
+    for item in response.json()["items"]:
+        requests.delete(f"{BASE_URL}/menu/{item['id']}")
+
+
 @pytest.fixture(scope="module", autouse=True)
 def setup_and_teardown():
-    # Setup: Ensure the server is running and create initial data
-    # In a real-world scenario, you might start the server here
-    # and create a fresh database.
-    # For now, we assume the server is running and the DB is clean.
-
-    # Teardown: Clean up created resources
+    clear_db()  # Clear before tests
     yield
-    # You might want to clean up the database after tests run
-    pass
+    clear_db()  # Clear after tests
 
 def test_get_root():
     response = requests.get(f"{BASE_URL}/")
@@ -63,7 +68,7 @@ def test_get_single_order():
     data = response.json()
     assert data["id"] == 1
 
-def test_replace_order():
+def test_update_order_with_items():
     order_data = {
         "status": "completed",
         "items": [
@@ -71,10 +76,11 @@ def test_replace_order():
             {"menu_item_id": 3, "quantity": 2}
         ]
     }
-    response = requests.put(f"{BASE_URL}/orders/1", json=order_data)
+    response = requests.patch(f"{BASE_URL}/orders/1", json=order_data)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "completed"
+    assert len(data["items"]) == 2
 
 def test_partially_update_order():
     update_data = {"status": "cancelled"}

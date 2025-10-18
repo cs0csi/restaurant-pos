@@ -7,10 +7,6 @@ from typing import Optional
 from database import engine, Base, get_db
 from models import MenuItem, Order, OrderItem
 import schemas
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -26,12 +22,11 @@ def root():
 # =========================================================
 #                     MENU CRUD
 # =========================================================
+from sqlalchemy.exc import IntegrityError
+
+
 @app.post("/menu/", response_model=schemas.MenuItemRead)
 def create_menu_item(item: schemas.MenuItemCreate, db: Session = Depends(get_db)):
-    # Check if item with the same name already exists
-    existing_item = db.query(MenuItem).filter(MenuItem.name == item.name).first()
-    if existing_item:
-        raise HTTPException(status_code=409, detail="Menu item with this name already exists")
     db_item = MenuItem(**item.model_dump())
     db.add(db_item)
     try:
@@ -151,53 +146,40 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
     return db_order
 
 
-@app.put("/orders/{order_id}", response_model=schemas.OrderRead)
-def replace_order(order_id: int, order: schemas.OrderCreate, db: Session = Depends(get_db)):
-    db_order = db.query(Order).filter(Order.id == order_id).first()
-    if not db_order:
-        raise HTTPException(status_code=404, detail="Order not found")
-
-    db_order.status = order.status
-
-    # Delete existing order items (for full replacement logic)
-    db.query(OrderItem).filter(OrderItem.order_id == order_id).delete(synchronize_session='fetch')
-
-    total_price = 0.0
-
-    # Add new order items
-    for item_data in order.items:
-        menu_item = db.query(MenuItem).filter(MenuItem.id == item_data.menu_item_id).first()
-        if not menu_item:
-            db.rollback()
-            raise HTTPException(status_code=404, detail=f"Menu item {item_data.menu_item_id} not found")
-
-        item_price = menu_item.price * item_data.quantity
-        total_price += item_price
-
-        db_item = OrderItem(
-            order_id=db_order.id,
-            menu_item_id=item_data.menu_item_id,
-            quantity=item_data.quantity,
-            price=item_price
-        )
-        db.add(db_item)
-
-    db_order.total_price = total_price
-
-    db.commit()
-    db.refresh(db_order)
-    return db_order
-
-
 @app.patch("/orders/{order_id}", response_model=schemas.OrderRead)
-def update_order_status(order_id: int, order_update: schemas.OrderUpdate, db: Session = Depends(get_db)):
+def update_order(order_id: int, order_update: schemas.OrderUpdate, db: Session = Depends(get_db)):
     db_order = db.query(Order).filter(Order.id == order_id).first()
     if not db_order:
         raise HTTPException(status_code=404, detail="Order not found")
 
     update_data = order_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_order, key, value)
+
+    if "status" in update_data:
+        db_order.status = update_data["status"]
+
+    if "items" in update_data:
+        # Delete existing order items
+        db.query(OrderItem).filter(OrderItem.order_id == order_id).delete(synchronize_session='fetch')
+
+        total_price = 0.0
+        for item_data in order_update.items:
+            menu_item = db.query(MenuItem).filter(MenuItem.id == item_data.menu_item_id).first()
+            if not menu_item:
+                db.rollback()
+                raise HTTPException(status_code=404, detail=f"Menu item {item_data.menu_item_id} not found")
+
+            item_price = menu_item.price * item_data.quantity
+            total_price += item_price
+
+            db_item = OrderItem(
+                order_id=db_order.id,
+                menu_item_id=item_data.menu_item_id,
+                quantity=item_data.quantity,
+                price=item_price
+            )
+            db.add(db_item)
+
+        db_order.total_price = total_price
 
     db.commit()
     db.refresh(db_order)
